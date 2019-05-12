@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -45,15 +46,9 @@ namespace Blockslice
             Directory.CreateDirectory("slices");
 
             var slice = 0;
-            for (var planeY = minPoint.Z + 0.1f; planeY < maxPoint.Z; planeY += 0.1f)
+            for (var planeY = minPoint.Z + 0.1f; planeY < maxPoint.Z; planeY += 1f)
             {
-                var segments = new List<LineSegment>();
-
-                foreach (var face in mesh.Faces)
-                {
-                    if (!TryIntersect(mesh, face, planeY, out var intersection)) continue;
-                    segments.Add(intersection);
-                }
+                var segments = Slicer.Slice(mesh, new InfPlane(new Vector3D(0, 0, planeY), new Vector3D(0, 0, 1)));
 
                 var r = (maxPoint.X - minPoint.X) / (maxPoint.Y - minPoint.Y);
                 var width = 512;
@@ -61,6 +56,8 @@ namespace Blockslice
                 var bmp = new Bitmap(width, height);
                 using (var gfx = Graphics.FromImage(bmp))
                 {
+                    gfx.SmoothingMode = SmoothingMode.HighQuality;
+
                     gfx.Clear(Color.White);
 
                     foreach (var segment in segments)
@@ -88,69 +85,6 @@ namespace Blockslice
         private static float Map(float a, float min, float max)
         {
             return (a - min) / (max - min);
-        }
-
-        private static bool TryIntersect(Mesh mesh, Face face, float planeY, out LineSegment intersection)
-        {
-            intersection = null;
-
-            if (face.IndexCount != 3)
-                throw new Exception("Face not triangular!");
-
-            var ia = face.Indices[0];
-            var ib = face.Indices[1];
-            var ic = face.Indices[2];
-
-            var a = mesh.Vertices[ia];
-            var b = mesh.Vertices[ib];
-            var c = mesh.Vertices[ic];
-
-            var ab = CanIntersect(planeY, a, b);
-            var bc = CanIntersect(planeY, b, c);
-            var ca = CanIntersect(planeY, c, a);
-
-            var planeNormal = new Vector3D(0, 0, 1);
-            var planePoint = new Vector3D(0, 0, planeY);
-
-            if (ab && bc)
-            {
-                var start = IntersectPoint(a, b, planeNormal, planePoint);
-                var end = IntersectPoint(b, c, planeNormal, planePoint);
-                intersection = new LineSegment(start, end);
-            }
-            else if (bc && ca)
-            {
-                var start = IntersectPoint(b, c, planeNormal, planePoint);
-                var end = IntersectPoint(c, a, planeNormal, planePoint);
-                intersection = new LineSegment(start, end);
-            }
-            else if (ca && ab)
-            {
-                var start = IntersectPoint(c, a, planeNormal, planePoint);
-                var end = IntersectPoint(a, b, planeNormal, planePoint);
-                intersection = new LineSegment(start, end);
-            }
-            else
-                return false;
-
-            return true;
-        }
-
-        private static bool CanIntersect(float planeY, Vector3D lineStart, Vector3D lineEnd)
-        {
-            return (lineStart.Z > planeY && lineEnd.Z < planeY) || (lineEnd.Z > planeY && lineStart.Z < planeY);
-        }
-
-        private static Vector3D IntersectPoint(Vector3D lineStart, Vector3D lineEnd, Vector3D planeNormal,
-            Vector3D planePoint)
-        {
-            var lineDirection = lineEnd - lineStart;
-            lineDirection.Normalize();
-            var diff = lineStart - planePoint;
-            var prod1 = diff.Dot(planeNormal);
-            var prod2 = lineDirection.Dot(planeNormal);
-            var prod3 = prod1 / prod2;
-            return lineStart - lineDirection.Scale(prod3);
         }
     }
 }
