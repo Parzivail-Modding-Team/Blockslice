@@ -56,8 +56,6 @@ namespace Blockslice
                 var bmp = new Bitmap(width, height);
                 using (var gfx = Graphics.FromImage(bmp))
                 {
-                    gfx.SmoothingMode = SmoothingMode.HighQuality;
-
                     gfx.Clear(Color.White);
 
                     foreach (var segment in segments)

@@ -69,9 +69,15 @@ namespace Blockslice
 
         private static bool CanIntersect(InfPlane plane, Vector3D lineStart, Vector3D lineEnd)
         {
-            var planeY = plane.Point.Z;
-            // TODO: allow non-orthographic plane testing
-            return (lineStart.Z > planeY && lineEnd.Z < planeY) || (lineEnd.Z > planeY && lineStart.Z < planeY);
+            var startAbove = IsPointAbovePlane(lineStart, plane);
+            var endAbove = IsPointAbovePlane(lineEnd, plane);
+
+            return (startAbove && !endAbove) || (!startAbove && endAbove);
+        }
+
+        private static bool IsPointAbovePlane(Vector3D point, InfPlane plane)
+        {
+            return plane.Normal.Dot(point - plane.Point) > 0;
         }
 
         private static Vector3D IntersectPoint(Vector3D lineStart, Vector3D lineEnd, Vector3D planeNormal,
