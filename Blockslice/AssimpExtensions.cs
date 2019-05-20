@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Drawing;
 using Assimp;
 
 namespace Blockslice
@@ -17,6 +13,12 @@ namespace Blockslice
         public static Vector3D Scale(this Vector3D left, float right)
         {
             return new Vector3D(left.X * right, left.Y * right, left.Z * right);
+        }
+
+        public static Color GetUniqueColor(this Face face)
+        {
+            var c = Color.FromArgb(face.GetHashCode());
+            return Color.FromArgb(255, c);
         }
     }
 }

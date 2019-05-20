@@ -47,19 +47,19 @@ namespace Blockslice
             {
                 var start = IntersectPoint(a, b, planeNormal, planePoint);
                 var end = IntersectPoint(b, c, planeNormal, planePoint);
-                intersection = new LineSegment(start, end);
+                intersection = new LineSegment(start, end, face);
             }
             else if (bc && ca)
             {
                 var start = IntersectPoint(b, c, planeNormal, planePoint);
                 var end = IntersectPoint(c, a, planeNormal, planePoint);
-                intersection = new LineSegment(start, end);
+                intersection = new LineSegment(start, end, face);
             }
             else if (ca && ab)
             {
                 var start = IntersectPoint(c, a, planeNormal, planePoint);
                 var end = IntersectPoint(a, b, planeNormal, planePoint);
-                intersection = new LineSegment(start, end);
+                intersection = new LineSegment(start, end, face);
             }
             else
                 return false;

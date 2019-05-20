@@ -46,13 +46,24 @@ namespace Blockslice
             Directory.CreateDirectory("slices");
 
             var slice = 0;
-            for (var planeY = minPoint.Z + 0.1f; planeY < maxPoint.Z; planeY += 1f)
-            {
-                var segments = Slicer.Slice(mesh, new InfPlane(new Vector3D(0, 0, planeY), new Vector3D(0, 0, 1)));
 
-                var r = (maxPoint.X - minPoint.X) / (maxPoint.Y - minPoint.Y);
-                var width = 512;
-                var height = (int)(width / r);
+            var rH = (maxPoint.X - minPoint.X) / (maxPoint.Y - minPoint.Y);
+            var rZ = (maxPoint.X - minPoint.X) / (maxPoint.Z - minPoint.Z);
+            var width = 80;
+            var height = (int)Math.Ceiling(width / rH);
+            var length = (int)Math.Ceiling(width / rZ);
+
+            var minProjectedPoint = new Vector3D(0, 0, 0);
+            var maxProjectedPoint = new Vector3D(width, height, length);
+
+            var sliceSize = (maxPoint.Z - minPoint.Z) / length;
+
+            var planeNormal = new Vector3D(0, 0, 1);
+
+            for (var planeY = minPoint.Z + 0.1f; planeY < maxPoint.Z + 0.1f; planeY += sliceSize)
+            {
+                var segments = Slicer.Slice(mesh, new InfPlane(new Vector3D(0, 0, planeY), planeNormal));
+
                 var bmp = new Bitmap(width, height);
                 using (var gfx = Graphics.FromImage(bmp))
                 {
@@ -60,29 +71,29 @@ namespace Blockslice
 
                     foreach (var segment in segments)
                     {
-                        var normalizedStart = MapPoint(segment.Start, minPoint, maxPoint);
-                        var normalizedEnd = MapPoint(segment.End, minPoint, maxPoint);
+                        var projectedStart = Map(segment.Start, minPoint, maxPoint, minProjectedPoint, maxProjectedPoint);
+                        var projectedEnd = Map(segment.End, minPoint, maxPoint, minProjectedPoint, maxProjectedPoint);
 
-                        gfx.DrawLine(Pens.Black, normalizedStart.X * width, normalizedStart.Y * height, normalizedEnd.X * width,
-                            normalizedEnd.Y * height);
+                        gfx.DrawLine(Pens.Black, projectedStart.X, projectedStart.Y, projectedEnd.X, projectedEnd.Y);
                     }
 
                     bmp.Save($"slices/slice-{slice:D5}.png");
                     slice++;
                 }
+                bmp.Dispose();
             }
 
             return 0;
         }
 
-        private static Vector3D MapPoint(Vector3D segmentStart, Vector3D minPoint, Vector3D maxPoint)
+        private static Vector3D Map(Vector3D x, Vector3D fromMin, Vector3D fromMax, Vector3D toMin, Vector3D toMax)
         {
-            return new Vector3D(Map(segmentStart.X, minPoint.X, maxPoint.X), Map(segmentStart.Y, minPoint.Y, maxPoint.Y), Map(segmentStart.Z, minPoint.Z, maxPoint.Z));
+            return new Vector3D(Map(x.X, fromMin.X, fromMax.X, toMin.X, toMax.X), Map(x.Y, fromMin.Y, fromMax.Y, toMin.Y, toMax.Y), Map(x.Z, fromMin.Z, fromMax.Z, toMin.Z, toMax.Z));
         }
 
-        private static float Map(float a, float min, float max)
+        private static float Map(float x, float fromMin, float fromMax, float toMin, float toMax)
         {
-            return (a - min) / (max - min);
+            return (x - fromMin) / (fromMax - fromMin) * (toMax - toMin) + toMin;
         }
     }
 }
